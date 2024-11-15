@@ -1,0 +1,107 @@
+Task10-> Triggers:
+
+1. Create a table named teachers with fields id, name, subject, experience and salary and insert 8 rows.
+
+CREATE TABLE teachers (
+    id INT PRIMARY KEY,
+    name VARCHAR(50),
+    subject VARCHAR(50),
+    experience INT,
+    salary DECIMAL(10, 2)
+);
+
+INSERT INTO teachers (id, name, subject, experience, salary) VALUES
+(1, 'Adarsh pratik', 'Mathematics', 5, 50000),
+(2, 'sayan sarkar', 'Physics', 7, 55000),
+(3, 'mahesh bhatt', 'Chemistry', 3, 52000),
+(4, 'yash parmar', 'Biology', 9, 48000),
+(5, 'Aryan harsh', 'English', 2, 45000),
+(6, 'ayush singh', 'History', 12, 60000),
+(7, 'Aditya kumar', 'Computer Science', 8, 53000),
+(8, 'hrithik roshan', 'Economics', 6, 49000);
+
+
+2. Create a before insert trigger named before_insert_teacher that will raise an error “salary cannot be negative” if the salary inserted to the table is less than zero.
+
+CREATE TRIGGER before_insert_teacher
+	ON teachers
+	INSTEAD OF INSERT
+	AS
+	BEGIN
+		IF EXISTS (SELECT 1 FROM inserted WHERE salary<0)
+        	BEGIN
+		    	RAISERROR ('Salary cannot be negative',16,1);
+		        ROLLBACK TRANSACTION;
+		END
+		ELSE
+		BEGIN
+		    	INSERT INTO teachers (Id, Name, subject, experience, salary) SELECT id,name,subject,experience,salary from inserted;
+		END
+	 END;
+
+	INSERT INTO teachers (Id, Name, subject, Experience, Salary) VALUES
+		(9, 'Pramod kumar','Science', 6, -55000.07)
+
+
+3. Create an after insert trigger named after_insert_teacher that inserts a row with teacher_id,action, timestamp to a table called teacher_log when a new entry gets inserted to the teacher table. tecaher_id -> column of teacher table, action -> the trigger action, timestamp -> time at which the new row has got inserted.
+
+
+ CREATE table teacher_log (
+	    teacher_id INT PRIMARY KEY,
+	    action NVARCHAR(50),
+	    Timestamp DATETIME);
+
+
+	CREATE TRIGGER after_insert_teacher
+		on teachers
+		AFTER INSERT
+		AS
+		BEGIN
+		    INSERT INTO teacher_log (teacher_id, action, timestamp)
+		    SELECT id, 'insert', GETDATE()
+		    FROM inserted;
+		END;
+
+INSERT INTO teachers (Id, Name, subject,Experience,Salary) VALUES
+		(10, 'Pramod kumar' , 'Science', 12, 50000),
+		(11, 'Abhishek Jha', 'Biology', 18, 78000);
+        
+SELECT * FROM teacher_log;
+
+4. Create a before delete trigger that will raise an error when you try to delete a row that has experience greater than 10 years.
+
+CREATE TRIGGER before_delete_teacher
+		ON teachers
+		INSTEAD OF DELETE
+		AS
+		BEGIN
+			IF EXISTS (SELECT 1 from deleted where experience>10)
+			    BEGIN
+			    	RAISERROR ('Cannot delete a teacher with more than 10 year of experience',16,1);
+			        ROLLBACK TRANSACTION;
+			    END
+			    ELSE
+			    BEGIN
+			    	DELETE FROM teachers
+			        WHERE id in (SELECT id FROM deleted);
+			    END
+		END;
+
+		DELETE from teachers
+		WHERE id=6;
+
+5. Create an after delete trigger that will insert a row to teacher_log table when that row is deleted from teacher table.
+
+	CREATE TRIGGER after_delete_trigger 
+	ON teachers
+	AFTER DELETE
+	AS 
+	BEGIN
+		INSERT INTO teacher_log (teacher_id, action, timestamp)
+		SELECT id, 'DELETE', GETDATE() FROM deleted;
+	END;
+
+	DELETE from teachers
+	WHERE id=4;
+
+	SELECT * from teacher_log;
